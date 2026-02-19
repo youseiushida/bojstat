@@ -12,7 +12,7 @@ import httpx
 from bojstat.cache import FileCache
 from bojstat.config import NORMALIZER_VERSION, PARSER_VERSION, SCHEMA_VERSION, ClientConfig, RetryConfig
 from bojstat.enums import ConsistencyMode, Format, Lang, OutputOrder
-from bojstat.errors import BojConsistencyError, BojDateParseError, BojLayerOverflowError
+from bojstat.errors import BojConsistencyError, BojDateParseError
 from bojstat.models import TimeSeriesFrame
 from bojstat.normalize import expand_timeseries_rows
 from bojstat.pager.code_pager import CodePagerState, advance_code_position
@@ -159,8 +159,9 @@ class DataService:
                     "CODE": ",".join(chunk),
                     "LANG": lang_norm.value,
                     "FORMAT": format_norm.value,
-                    "STARTPOSITION": str(pager.start_position),
                 }
+                if pager.start_position > 1:
+                    params["STARTPOSITION"] = str(pager.start_position)
                 if start_norm:
                     params["STARTDATE"] = start_norm
                 if end_norm:
@@ -347,9 +348,10 @@ class DataService:
                 "FREQUENCY": freq_norm.value,
                 "LANG": lang_norm.value,
                 "FORMAT": format_norm.value,
-                "STARTPOSITION": str(pager.start_position),
                 "LAYER": ",".join(layer_norm),
             }
+            if pager.start_position > 1:
+                params["STARTPOSITION"] = str(pager.start_position)
             if start_norm:
                 params["STARTDATE"] = start_norm
             if end_norm:
@@ -367,11 +369,6 @@ class DataService:
                 user_agent=self._config.user_agent,
                 capture_full_response=self._config.capture_full_response,
             )
-
-            if parsed.status == 400 and parsed.message_id == "M181020E":
-                raise BojLayerOverflowError(
-                    "階層抽出条件の系列数が上限を超過した可能性があります。"
-                )
 
             now = datetime.now(tz=_JST)
             if _window_crossed(first_fetch=first_fetch, current=now):
@@ -679,8 +676,9 @@ class _DataAsyncLogic:
                     "CODE": ",".join(chunk),
                     "LANG": lang_norm.value,
                     "FORMAT": format_norm.value,
-                    "STARTPOSITION": str(pager.start_position),
                 }
+                if pager.start_position > 1:
+                    params["STARTPOSITION"] = str(pager.start_position)
                 if start_norm:
                     params["STARTDATE"] = start_norm
                 if end_norm:
@@ -855,9 +853,10 @@ class _DataAsyncLogic:
                 "FREQUENCY": freq_norm.value,
                 "LANG": lang_norm.value,
                 "FORMAT": format_norm.value,
-                "STARTPOSITION": str(pager.start_position),
                 "LAYER": ",".join(layer_norm),
             }
+            if pager.start_position > 1:
+                params["STARTPOSITION"] = str(pager.start_position)
             if start_norm:
                 params["STARTDATE"] = start_norm
             if end_norm:

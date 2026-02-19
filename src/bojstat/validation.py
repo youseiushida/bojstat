@@ -10,7 +10,7 @@ from typing import Any
 from bojstat.enums import Format, Frequency, Lang
 from bojstat.errors import BojValidationError
 
-_FORBIDDEN_CHARS = {'<', '>', '"', '!', '|', '¥', ';', "'"}
+_FORBIDDEN_CHARS = {'<', '>', '"', '!', '|', '\\', '¥', ';', "'"}
 _CORE_PARAM_KEYS = {
     "DB",
     "CODE",
@@ -349,14 +349,6 @@ def validate_strict_auto_split(*, strict_api: bool, auto_split_codes: bool) -> N
     if strict_api and auto_split_codes:
         raise ValueError("strict_api=True と auto_split_codes=True は同時指定不可")
 
-
-def build_layer_params(layer: Sequence[str]) -> dict[str, str]:
-    """LAYER指定から公式パラメータを作成する。"""
-
-    params: dict[str, str] = {}
-    for idx, value in enumerate(layer, start=1):
-        params[f"LAYER{idx}"] = value
-    return params
 
 
 def normalize_raw_params(

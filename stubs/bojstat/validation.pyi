@@ -68,8 +68,6 @@ def normalize_start_position(value: int | str | None) -> int | None:
     """検索開始位置を正規化する。"""
 def validate_strict_auto_split(*, strict_api: bool, auto_split_codes: bool) -> None:
     """strict_api と auto_split_codes の契約を検証する。"""
-def build_layer_params(layer: Sequence[str]) -> dict[str, str]:
-    """LAYER指定から公式パラメータを作成する。"""
 def normalize_raw_params(raw_params: dict[str, str] | None, *, allow_raw_override: bool) -> dict[str, str]:
     """raw_params の衝突検証を行う。"""
 def guess_frequency_from_code(code: str) -> str:

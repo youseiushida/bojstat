@@ -2,7 +2,7 @@ import httpx
 from bojstat.cache import FileCache as FileCache
 from bojstat.config import ClientConfig as ClientConfig, NORMALIZER_VERSION as NORMALIZER_VERSION, PARSER_VERSION as PARSER_VERSION, RetryConfig as RetryConfig, SCHEMA_VERSION as SCHEMA_VERSION
 from bojstat.enums import ConsistencyMode as ConsistencyMode, Format as Format, Lang as Lang, OutputOrder as OutputOrder
-from bojstat.errors import BojConsistencyError as BojConsistencyError, BojDateParseError as BojDateParseError, BojLayerOverflowError as BojLayerOverflowError
+from bojstat.errors import BojConsistencyError as BojConsistencyError, BojDateParseError as BojDateParseError
 from bojstat.models import TimeSeriesFrame as TimeSeriesFrame
 from bojstat.normalize import expand_timeseries_rows as expand_timeseries_rows
 from bojstat.pager.code_pager import CodePagerState as CodePagerState, advance_code_position as advance_code_position

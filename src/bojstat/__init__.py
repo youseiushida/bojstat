@@ -17,7 +17,7 @@ from bojstat.errors import (
     BojDateParseError,
     BojError,
     BojGatewayError,
-    BojLayerOverflowError,
+
     BojPaginationStalledError,
     BojResumeTokenMismatchError,
     BojServerError,
@@ -36,7 +36,7 @@ __all__ = [
     "BojDateParseError",
     "BojError",
     "BojGatewayError",
-    "BojLayerOverflowError",
+
     "BojPaginationStalledError",
     "BojResumeTokenMismatchError",
     "BojServerError",

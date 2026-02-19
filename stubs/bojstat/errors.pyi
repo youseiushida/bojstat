@@ -66,10 +66,6 @@ class BojDateParseError(BojError):
     """DATE解析失敗。"""
     def __init__(self, message: str) -> None: ...
 
-class BojLayerOverflowError(BojError):
-    """階層抽出1,250件超過。"""
-    def __init__(self, message: str) -> None: ...
-
 class BojConsistencyError(BojError):
     """整合性モード strict での停止例外。"""
     signal: Incomplete

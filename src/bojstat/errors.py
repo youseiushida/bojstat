@@ -133,12 +133,6 @@ class BojDateParseError(BojError):
         super().__init__(message, origin="client_validation")
 
 
-class BojLayerOverflowError(BojError):
-    """階層抽出1,250件超過。"""
-
-    def __init__(self, message: str) -> None:
-        super().__init__(message, origin="server_response")
-
 
 class BojConsistencyError(BojError):
     """整合性モード strict での停止例外。"""
