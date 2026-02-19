@@ -4,9 +4,11 @@ from __future__ import annotations
 
 import re
 import unicodedata
+import warnings
 from collections.abc import Iterable, Sequence
 from typing import Any
 
+from bojstat.db_catalog import is_known_db
 from bojstat.enums import Format, Frequency, Lang
 from bojstat.errors import BojValidationError
 
@@ -104,6 +106,12 @@ def normalize_db(value: str) -> str:
     if not db:
         raise BojValidationError("DB が指定されていません。", validation_code="missing_db")
     validate_outbound_text(db, param_name="DB")
+    if not is_known_db(db):
+        warnings.warn(
+            f"DB '{db}' は既知のDBコード一覧に含まれていません。"
+            " 新規追加されたDBの可能性があります。",
+            stacklevel=2,
+        )
     return db
 
 

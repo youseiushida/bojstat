@@ -1,10 +1,12 @@
 """bojstat 公開API。"""
 
 from bojstat.client import AsyncBojClient, BojClient
+from bojstat.db_catalog import get_db_info, list_dbs
 from bojstat.enums import (
     CacheMode,
     ConflictResolution,
     ConsistencyMode,
+    DB,
     Format,
     Frequency,
     Lang,
@@ -46,10 +48,13 @@ __all__ = [
     "CacheMode",
     "ConflictResolution",
     "ConsistencyMode",
+    "DB",
     "Format",
     "Frequency",
     "Lang",
     "MetadataFrame",
     "OutputOrder",
     "TimeSeriesFrame",
+    "get_db_info",
+    "list_dbs",
 ]

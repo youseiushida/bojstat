@@ -53,6 +53,77 @@ class Frequency(StrEnum):
     D = "D"
 
 
+class DB(StrEnum):
+    """日銀統計DBコードを表す列挙型。
+
+    APIDOC「Ⅱ.3.（2）DB名」記載の全DBコードを列挙する。
+    StrEnumのため、文字列としても利用可能（例: DB.CO == "CO"）。
+    """
+
+    # 金利（預金・貸出関連）
+    IR01 = "IR01"
+    IR02 = "IR02"
+    IR03 = "IR03"
+    IR04 = "IR04"
+    # マーケット関連
+    FM01 = "FM01"
+    FM02 = "FM02"
+    FM03 = "FM03"
+    FM04 = "FM04"
+    FM05 = "FM05"
+    FM06 = "FM06"
+    FM07 = "FM07"
+    FM08 = "FM08"
+    FM09 = "FM09"
+    # 決済関連
+    PS01 = "PS01"
+    PS02 = "PS02"
+    # 預金・マネー・貸出
+    MD01 = "MD01"
+    MD02 = "MD02"
+    MD03 = "MD03"
+    MD04 = "MD04"
+    MD05 = "MD05"
+    MD06 = "MD06"
+    MD07 = "MD07"
+    MD08 = "MD08"
+    MD09 = "MD09"
+    MD10 = "MD10"
+    MD11 = "MD11"
+    MD12 = "MD12"
+    MD13 = "MD13"
+    MD14 = "MD14"
+    LA01 = "LA01"
+    LA02 = "LA02"
+    LA03 = "LA03"
+    LA04 = "LA04"
+    LA05 = "LA05"
+    # 金融機関バランスシート
+    BS01 = "BS01"
+    BS02 = "BS02"
+    # 資金循環
+    FF = "FF"
+    # その他の日本銀行関連
+    OB01 = "OB01"
+    OB02 = "OB02"
+    # 短観
+    CO = "CO"
+    # 物価
+    PR01 = "PR01"
+    PR02 = "PR02"
+    PR03 = "PR03"
+    PR04 = "PR04"
+    # 財政関連
+    PF01 = "PF01"
+    PF02 = "PF02"
+    # 国際収支・BIS関連
+    BIS = "BIS"
+    BP01 = "BP01"
+    DER = "DER"
+    # その他
+    OT = "OT"
+
+
 class CacheMode(StrEnum):
     """キャッシュ利用モード。
 

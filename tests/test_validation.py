@@ -7,6 +7,7 @@ import pytest
 from bojstat.errors import BojValidationError
 from bojstat.validation import (
     normalize_code_periods,
+    normalize_db,
     normalize_lang,
     split_codes_by_frequency_and_size,
     validate_outbound_text,
@@ -51,3 +52,18 @@ def test_normalize_code_periods_rejects_invalid_format() -> None:
 def test_normalize_code_periods_rejects_order_inversion() -> None:
     with pytest.raises(BojValidationError):
         normalize_code_periods(start="202412", end="2024")
+
+
+def test_normalize_db_unknown_warns() -> None:
+    with pytest.warns(UserWarning, match="既知のDBコード一覧に含まれていません"):
+        result = normalize_db("ZZZZ")
+    assert result == "ZZZZ"
+
+
+def test_normalize_db_known_no_warn() -> None:
+    import warnings
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        result = normalize_db("CO")
+    assert result == "CO"
