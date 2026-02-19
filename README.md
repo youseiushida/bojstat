@@ -6,6 +6,7 @@
 **bojstat** は、[日本銀行 時系列統計データ検索サイト](https://www.stat-search.boj.or.jp/)の API に対応した Python クライアントライブラリです。コード API・階層 API・メタデータ API の 3 種すべてをサポートし、同期・非同期クライアント、自動ページング、ローカルキャッシュ、リトライ、pandas / polars 変換を提供します。内部の HTTP 通信には [httpx](https://github.com/encode/httpx) を使用しています。
 
 [GitHub Repository](https://github.com/youseiushida/bojstat)
+[すぐに試せるColab😼](https://colab.research.google.com/drive/1dY9DdZ0pykO6ZCFZhHoxHE-P5T66X4PB?usp=sharing)
 
 ## インストール
 
