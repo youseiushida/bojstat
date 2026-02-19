@@ -1,30 +1,32 @@
 # bojstat — 日本銀行 時系列統計データ Python クライアント
 
-[![PyPI version](https://img.shields.io/pypi/v/bojstat.svg)](https://pypi.org/project/bojstat/)
-[![Python](https://img.shields.io/pypi/pyversions/bojstat.svg)](https://pypi.org/project/bojstat/)
+[![PyPI version](https://img.shields.io/pypi/v/bojstat-py.svg)](https://pypi.org/project/bojstat-py/)
+[![Python](https://img.shields.io/pypi/pyversions/bojstat-py.svg)](https://pypi.org/project/bojstat-py/)
 
 **bojstat** は、[日本銀行 時系列統計データ検索サイト](https://www.stat-search.boj.or.jp/)の API に対応した Python クライアントライブラリです。コード API・階層 API・メタデータ API の 3 種すべてをサポートし、同期・非同期クライアント、自動ページング、ローカルキャッシュ、リトライ、pandas / polars 変換を提供します。内部の HTTP 通信には [httpx](https://github.com/encode/httpx) を使用しています。
+
+[GitHub Repository](https://github.com/youseiushida/bojstat)
 
 ## インストール
 
 ```sh
-pip install bojstat
+pip install bojstat-py
 ```
 
 オプション依存:
 
 ```sh
 # pandas 連携
-pip install 'bojstat[pandas]'
+pip install 'bojstat-py[pandas]'
 
 # polars 連携
-pip install 'bojstat[polars]'
+pip install 'bojstat-py[polars]'
 
 # pandas + polars 両方
-pip install 'bojstat[dataframe]'
+pip install 'bojstat-py[dataframe]'
 
 # CLI（typer + rich + pyarrow）
-pip install 'bojstat[cli]'
+pip install 'bojstat-py[cli]'
 ```
 
 ## クイックスタート

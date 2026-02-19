@@ -3,14 +3,17 @@ requires = ["hatchling>=1.27.0"]
 build-backend = "hatchling.build"
 
 [project]
-name = "bojstat"
-version = "0.1.0"
+name = "bojstat-py"
+version = "0.1.1"
 description = "日本銀行API向けPythonクライアント"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "httpx>=0.28.1",
 ]
+
+[project.urls]
+Repository = "https://github.com/youseiushida/bojstat"
 
 [project.optional-dependencies]
 pandas = ["pandas>=2.2.0"]
@@ -38,4 +41,3 @@ dev = [
     "ruff>=0.9.0",
     "tzdata>=2025.3",
 ]
-
