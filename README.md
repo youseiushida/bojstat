@@ -406,7 +406,7 @@ frame = client.data.get_by_code(
 
 ## CLI
 
-`bojstat[cli]` をインストールすると、コマンドラインから直接データを取得できます。
+`bojstat-py[cli]` をインストールすると、コマンドラインから直接データを取得できます。
 
 ```sh
 # メタデータを JSON で保存
