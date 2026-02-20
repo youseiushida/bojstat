@@ -40,11 +40,20 @@ from bojstat import BojClient, DB
 with BojClient() as client:
     # 短観（CO）の業況判断 DI を取得
     frame = client.data.get_by_code(
-        db=DB.CO,
+        db=DB.短観,
         code="TK99F1000601GCQ01000",
         start="202401",
         end="202504",
     )
+    
+# with BojClient() as client:
+#     # 短観（CO）の業況判断 DI を取得
+#     frame = client.data.get_by_code(
+#         db=DB.CO,
+#         code="TK99F1000601GCQ01000",
+#         start="202401",
+#         end="202504",
+#     )
 
 for record in frame.records:
     print(record.survey_date, record.value)
@@ -97,7 +106,7 @@ DB.短観 == "CO"            # True
 from bojstat import BojClient, DB
 
 with BojClient() as client:
-    meta = client.metadata.get(db=DB.FM08)
+    meta = client.metadata.get(db=DB.外国為替市況)
 
     # 系列名で絞り込み
     hits = meta.find(name_contains="ドル")
@@ -124,7 +133,7 @@ from bojstat import BojClient, DB
 
 with BojClient() as client:
     frame = client.data.get_by_code(
-        db=DB.FM08,
+        db=DB.外国為替市況,
         code="FXERD01",         # 単一コード（文字列）
         start="202401",
         end="202412",
@@ -140,7 +149,7 @@ with BojClient() as client:
 
 ```python
 frame = client.data.get_by_code(
-    db=DB.FM08,
+    db=DB.外国為替市況,
     code=["FXERD01", "FXERD02"],  # リストで複数指定
     start="202401",
 )
@@ -155,7 +164,7 @@ from bojstat import BojClient, DB
 
 with BojClient() as client:
     frame = client.data.get_by_layer(
-        db=DB.BP01,
+        db=DB.国際収支統計,
         frequency="M",              # 月次
         layer=[1, 1, 1],            # 階層1=1, 階層2=1, 階層3=1
         start="202504",
@@ -169,7 +178,7 @@ with BojClient() as client:
 
 ```python
 frame = client.data.get_by_layer(
-    db=DB.FF,
+    db=DB.資金循環,
     frequency="Q",
     layer="*",  # 全階層
 )
@@ -204,7 +213,7 @@ from bojstat import AsyncBojClient, DB
 async def main():
     async with AsyncBojClient() as client:
         frame = await client.data.get_by_code(
-            db=DB.CO,
+            db=DB.短観,
             code="TK99F1000601GCQ01000",
             start="202401",
         )
@@ -222,7 +231,7 @@ from bojstat import BojClient, DB
 
 with BojClient() as client:
     frame = client.data.get_by_code(
-        db=DB.FM08,
+        db=DB.外国為替市況,
         code="FXERD01",
         start="202401",
     )
@@ -240,7 +249,7 @@ print(df.select(["survey_date", "value"]).head())
 ### メタデータの DataFrame 変換
 
 ```python
-meta = client.metadata.get(db=DB.FM08)
+meta = client.metadata.get(db=DB.外国為替市況)
 df = meta.to_pandas()  # or meta.to_polars()
 print(df.columns.tolist())
 ```
@@ -278,7 +287,7 @@ frame = client.data.get_by_layer(
 
 ```python
 frame = client.data.get_by_layer(
-    db=DB.FF,
+    db=DB.資金循環,
     frequency="Q",
     layer="*",
     auto_paginate=False,  # 1 ページだけ取得
