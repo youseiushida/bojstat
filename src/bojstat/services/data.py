@@ -11,7 +11,7 @@ import httpx
 
 from bojstat.cache import FileCache
 from bojstat.config import NORMALIZER_VERSION, PARSER_VERSION, SCHEMA_VERSION, ClientConfig, RetryConfig
-from bojstat.enums import ConsistencyMode, Format, Lang, OutputOrder
+from bojstat.enums import DB, ConsistencyMode, Format, Lang, OutputOrder
 from bojstat.errors import BojConsistencyError, BojDateParseError
 from bojstat.models import TimeSeriesFrame
 from bojstat.normalize import expand_timeseries_rows
@@ -24,6 +24,7 @@ from bojstat.validation import (
     canonical_params,
     normalize_code_periods,
     normalize_codes,
+    normalize_db,
     normalize_format,
     normalize_frequency,
     normalize_lang,
@@ -58,7 +59,7 @@ class DataService:
     def get_by_code(
         self,
         *,
-        db: str,
+        db: DB | str,
         code: str | Sequence[str],
         start: str | None = None,
         end: str | None = None,
@@ -79,7 +80,7 @@ class DataService:
 
         lang_norm = normalize_lang(lang or self._config.lang)
         format_norm = normalize_format(format or self._config.format)
-        db_norm = db.strip().upper()
+        db_norm = normalize_db(db)
         codes = normalize_codes(code)
         raw = normalize_raw_params(
             dict(raw_params) if raw_params is not None else None,
@@ -265,7 +266,7 @@ class DataService:
     def get_by_layer(
         self,
         *,
-        db: str,
+        db: DB | str,
         frequency: str,
         layer: str | Sequence[str | int],
         start: str | None = None,
@@ -281,7 +282,7 @@ class DataService:
 
         lang_norm = normalize_lang(lang or self._config.lang)
         format_norm = normalize_format(format or self._config.format)
-        db_norm = db.strip().upper()
+        db_norm = normalize_db(db)
         freq_norm = normalize_frequency(frequency, required=True)
         assert freq_norm is not None
         layer_norm = normalize_layer(layer)
@@ -593,7 +594,7 @@ class _DataAsyncLogic:
 
         lang_norm = normalize_lang(lang or self._owner._config.lang)
         format_norm = normalize_format(format or self._owner._config.format)
-        db_norm = db.strip().upper()
+        db_norm = normalize_db(db)
         codes = normalize_codes(code)
         raw = normalize_raw_params(
             dict(raw_params) if raw_params is not None else None,
@@ -783,7 +784,7 @@ class _DataAsyncLogic:
 
         lang_norm = normalize_lang(lang or self._owner._config.lang)
         format_norm = normalize_format(format or self._owner._config.format)
-        db_norm = db.strip().upper()
+        db_norm = normalize_db(db)
         freq_norm = normalize_frequency(frequency, required=True)
         assert freq_norm is not None
         layer_norm = normalize_layer(layer)

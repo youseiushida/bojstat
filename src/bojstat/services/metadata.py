@@ -8,7 +8,7 @@ import httpx
 
 from bojstat.cache import FileCache
 from bojstat.config import NORMALIZER_VERSION, PARSER_VERSION, SCHEMA_VERSION, ClientConfig, RetryConfig
-from bojstat.enums import Format, Lang
+from bojstat.enums import DB, Format, Lang
 from bojstat.errors import BojDateParseError
 from bojstat.models import MetadataFrame
 from bojstat.normalize import normalize_metadata_rows
@@ -39,7 +39,7 @@ class MetadataService:
     def get(
         self,
         *,
-        db: str,
+        db: DB | str,
         lang: Lang | str | None = None,
         format: Format | str | None = None,
         raw_params: dict[str, str] | None = None,
@@ -144,7 +144,7 @@ class AsyncMetadataService:
     async def get(
         self,
         *,
-        db: str,
+        db: DB | str,
         lang: Lang | str | None = None,
         format: Format | str | None = None,
         raw_params: dict[str, str] | None = None,

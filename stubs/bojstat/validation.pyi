@@ -1,4 +1,5 @@
-from bojstat.enums import Format as Format, Frequency as Frequency, Lang as Lang
+from bojstat.db_catalog import is_known_db as is_known_db
+from bojstat.enums import DB as DB, Format as Format, Frequency as Frequency, Lang as Lang
 from bojstat.errors import BojValidationError as BojValidationError
 from collections.abc import Sequence
 from typing import Any
@@ -30,7 +31,7 @@ def normalize_frequency(value: Frequency | str | None, *, required: bool) -> Fre
     Raises:
         BojValidationError: 必須未指定または不正値。
     """
-def normalize_db(value: str) -> str:
+def normalize_db(value: DB | str) -> str:
     """DB名を正規化する。"""
 def validate_outbound_text(value: str, *, param_name: str) -> None:
     """外部送信する文字列を検証する。

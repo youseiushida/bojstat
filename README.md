@@ -74,6 +74,21 @@ print(info.category_ja)  # "マーケット関連"
 print(DB.FM08 == "FM08")  # True
 ```
 
+## 日本語エイリアス
+
+`DB` enum には日本語名のエイリアスが定義されています。IDE の補完機能で日本語名から DB を指定できます。
+
+```python
+from bojstat import DB
+
+# 日本語名で指定（エイリアスなので同一オブジェクト）
+DB.短観 is DB.CO          # True
+DB.外国為替市況 is DB.FM08  # True
+
+# 文字列としても動作
+DB.短観 == "CO"            # True
+```
+
 ## 系列コードの発見
 
 メタデータ API と `find()` メソッドを組み合わせることで、系列コードをプログラム的に発見できます。

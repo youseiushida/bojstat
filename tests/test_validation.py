@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from bojstat.enums import DB
 from bojstat.errors import BojValidationError
 from bojstat.validation import (
     normalize_code_periods,
@@ -67,3 +68,11 @@ def test_normalize_db_known_no_warn() -> None:
         warnings.simplefilter("error")
         result = normalize_db("CO")
     assert result == "CO"
+
+
+def test_normalize_db_accepts_enum() -> None:
+    assert normalize_db(DB.CO) == "CO"
+
+
+def test_normalize_db_accepts_japanese_alias() -> None:
+    assert normalize_db(DB.短観) == "CO"

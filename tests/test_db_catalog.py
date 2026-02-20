@@ -83,3 +83,23 @@ def test_dbinfo_str() -> None:
     info = get_db_info("CO")
     assert info is not None
     assert str(info) == "CO: 短観"
+
+
+def test_db_japanese_alias_identity() -> None:
+    assert DB.短観 is DB.CO
+    assert DB.外国為替市況 is DB.FM08
+    assert DB.資金循環 is DB.FF
+    assert DB.マネーストック is DB.MD02
+    assert DB.国際収支統計 is DB.BP01
+
+
+def test_db_japanese_alias_value() -> None:
+    assert DB.短観 == "CO"
+    assert DB.外国為替市況 == "FM08"
+    assert DB.企業物価指数 == "PR01"
+    assert DB.その他 == "OT"
+
+
+def test_db_enum_count_unchanged_with_aliases() -> None:
+    """エイリアスはlen()に含まれない。"""
+    assert len(DB) == 50

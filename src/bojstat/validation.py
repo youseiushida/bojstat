@@ -9,7 +9,7 @@ from collections.abc import Iterable, Sequence
 from typing import Any
 
 from bojstat.db_catalog import is_known_db
-from bojstat.enums import Format, Frequency, Lang
+from bojstat.enums import DB, Format, Frequency, Lang
 from bojstat.errors import BojValidationError
 
 _FORBIDDEN_CHARS = {'<', '>', '"', '!', '|', '\\', '¥', ';', "'"}
@@ -99,9 +99,11 @@ def normalize_frequency(value: Frequency | str | None, *, required: bool) -> Fre
         ) from exc
 
 
-def normalize_db(value: str) -> str:
+def normalize_db(value: DB | str) -> str:
     """DB名を正規化する。"""
 
+    if isinstance(value, DB):
+        return value.value
     db = value.strip().upper()
     if not db:
         raise BojValidationError("DB が指定されていません。", validation_code="missing_db")

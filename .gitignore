@@ -208,3 +208,6 @@ __marimo__/
 
 examples/
 docs/
+
+CLAUDE.md
+.claude/
