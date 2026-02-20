@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import asdict
 from decimal import Decimal
+from collections.abc import Callable
 from typing import Any, Literal
 
 from bojstat.enums import Frequency
@@ -188,6 +189,25 @@ class MetadataFrame:
                 if record.frequency and freq_text in record.frequency.upper()
             ]
         return MetadataFrame(records=result, meta=self.meta)
+
+    def filter(self, predicate: Callable[[MetadataRecord], bool]) -> "MetadataFrame":
+        """条件関数でレコードを絞り込む。
+
+        Args:
+            predicate: MetadataRecordを受け取りboolを返す関数。
+                Trueを返したレコードのみが結果に含まれる。
+
+        Returns:
+            条件を満たすレコードだけを含む新しいMetadataFrame。
+
+        Examples:
+            >>> frame.filter(lambda r: r.category == "外国為替")
+            >>> frame.filter(lambda r: r.layer1 == "1" and r.unit == "億円")
+        """
+        return MetadataFrame(
+            records=[r for r in self.records if predicate(r)],
+            meta=self.meta,
+        )
 
     def to_pandas(self) -> Any:
         """pandas.DataFrameへ変換する。"""

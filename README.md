@@ -123,6 +123,13 @@ with BojClient() as client:
     result = meta.find(name_contains="ドル", frequency="DAILY")
     for rec in result.records[:5]:
         print(rec.series_code, rec.series_name)
+
+    # filter() で任意の条件を指定
+    hits = meta.filter(lambda r: r.category == "外国為替" and r.layer1 == "1")
+    print(hits.series_codes)
+
+    # find() と filter() のチェーン
+    result = meta.find(name_contains="ドル").filter(lambda r: r.unit == "円")
 ```
 
 ## 使い方

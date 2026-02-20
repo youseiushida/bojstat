@@ -1,6 +1,7 @@
 from _typeshed import Incomplete
 from bojstat.enums import Frequency as Frequency
 from bojstat.types import MetadataRecord as MetadataRecord, ResponseMeta as ResponseMeta, TimeSeriesRecord as TimeSeriesRecord
+from collections.abc import Callable as Callable
 from typing import Any
 
 NumericMode: Incomplete
@@ -36,6 +37,20 @@ class MetadataFrame:
         """系列コード一覧を返す。"""
     def find(self, *, name_contains: str | None = None, frequency: Frequency | str | None = None) -> MetadataFrame:
         """簡易検索で絞り込む。"""
+    def filter(self, predicate: Callable[[MetadataRecord], bool]) -> MetadataFrame:
+        '''条件関数でレコードを絞り込む。
+
+        Args:
+            predicate: MetadataRecordを受け取りboolを返す関数。
+                Trueを返したレコードのみが結果に含まれる。
+
+        Returns:
+            条件を満たすレコードだけを含む新しいMetadataFrame。
+
+        Examples:
+            >>> frame.filter(lambda r: r.category == "外国為替")
+            >>> frame.filter(lambda r: r.layer1 == "1" and r.unit == "億円")
+        '''
     def to_pandas(self) -> Any:
         """pandas.DataFrameへ変換する。"""
     def to_polars(self) -> Any:
