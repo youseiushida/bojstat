@@ -2,8 +2,8 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/bojstat-py.svg)](https://pypi.org/project/bojstat-py/)
 [![Python](https://img.shields.io/pypi/pyversions/bojstat-py.svg)](https://pypi.org/project/bojstat-py/)
-[![Context7 Indexed](https://img.shields.io/badge/Context7-Indexed-blue)](https://context7.com/youseiushida/bojstat)
-[![Context7 llms.txt](https://img.shields.io/badge/Context7-llms.txt-blue)](https://context7.com/youseiushida/bojstat/llms.txt)
+[![Context7 Indexed](https://img.shields.io/badge/Context7-Indexed-047857)](https://context7.com/youseiushida/bojstat)
+[![Context7 llms.txt](https://img.shields.io/badge/Context7-llms.txt-047857)](https://context7.com/youseiushida/bojstat/llms.txt)
 
 **bojstat** は、[日本銀行 時系列統計データ検索サイト](https://www.stat-search.boj.or.jp/)の API に対応した Python クライアントライブラリです。コード API・階層 API・メタデータ API の 3 種すべてをサポートし、同期・非同期クライアント、自動ページング、ローカルキャッシュ、リトライ、pandas / polars 変換を提供します。内部の HTTP 通信には [httpx](https://github.com/encode/httpx) を使用しています。
 
