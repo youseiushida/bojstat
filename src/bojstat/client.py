@@ -34,6 +34,7 @@ class BojClient:
         cache_ttl: int = 24 * 60 * 60,
         strict_api: bool = True,
         auto_split_codes: bool = False,
+        resolve_wildcard: bool = True,
         consistency_mode: ConsistencyMode | str = ConsistencyMode.STRICT,
         conflict_resolution: ConflictResolution | str = ConflictResolution.LATEST_LAST_UPDATE,
         output_order: OutputOrder | str = OutputOrder.CANONICAL,
@@ -66,6 +67,7 @@ class BojClient:
             cache_ttl: キャッシュTTL秒。
             strict_api: 仕様準拠モード。
             auto_split_codes: コード自動分割有効化。
+            resolve_wildcard: ワイルドカード階層の自動解決。
             consistency_mode: 整合性モード。
             conflict_resolution: 競合解決ルール。
             output_order: 出力順序。
@@ -141,6 +143,7 @@ class BojClient:
             rate_limit_per_sec=rate_limit_per_sec,
             strict_api=strict_api,
             auto_split_codes=auto_split_codes,
+            resolve_wildcard=resolve_wildcard,
             consistency_mode=consistency_norm,
             conflict_resolution=conflict_norm,
             output_order=output_order_norm,
@@ -161,19 +164,20 @@ class BojClient:
         self._cache = FileCache(cache_dir=cache_conf.dir, ttl_seconds=cache_conf.ttl_seconds)
         self._limiter = SyncRateLimiter(rate_limit_per_sec=rate_limit_per_sec)
 
-        self.data = DataService(
-            client=self._http_client,
-            config=self._config,
-            retry_config=self._retry,
-            cache=self._cache,
-            limiter=self._limiter,
-        )
         self.metadata = MetadataService(
             client=self._http_client,
             config=self._config,
             retry_config=self._retry,
             cache=self._cache,
             limiter=self._limiter,
+        )
+        self.data = DataService(
+            client=self._http_client,
+            config=self._config,
+            retry_config=self._retry,
+            cache=self._cache,
+            limiter=self._limiter,
+            metadata_service=self.metadata,
         )
         self.errors = ErrorClassifier()
 
@@ -211,6 +215,7 @@ class AsyncBojClient:
         cache_ttl: int = 24 * 60 * 60,
         strict_api: bool = True,
         auto_split_codes: bool = False,
+        resolve_wildcard: bool = True,
         consistency_mode: ConsistencyMode | str = ConsistencyMode.STRICT,
         conflict_resolution: ConflictResolution | str = ConflictResolution.LATEST_LAST_UPDATE,
         output_order: OutputOrder | str = OutputOrder.CANONICAL,
@@ -287,6 +292,7 @@ class AsyncBojClient:
             rate_limit_per_sec=rate_limit_per_sec,
             strict_api=strict_api,
             auto_split_codes=auto_split_codes,
+            resolve_wildcard=resolve_wildcard,
             consistency_mode=consistency_norm,
             conflict_resolution=conflict_norm,
             output_order=output_order_norm,
@@ -307,19 +313,20 @@ class AsyncBojClient:
         self._cache = FileCache(cache_dir=cache_conf.dir, ttl_seconds=cache_conf.ttl_seconds)
         self._limiter = AsyncRateLimiter(rate_limit_per_sec=rate_limit_per_sec)
 
-        self.data = AsyncDataService(
-            client=self._http_client,
-            config=self._config,
-            retry_config=self._retry,
-            cache=self._cache,
-            limiter=self._limiter,
-        )
         self.metadata = AsyncMetadataService(
             client=self._http_client,
             config=self._config,
             retry_config=self._retry,
             cache=self._cache,
             limiter=self._limiter,
+        )
+        self.data = AsyncDataService(
+            client=self._http_client,
+            config=self._config,
+            retry_config=self._retry,
+            cache=self._cache,
+            limiter=self._limiter,
+            metadata_service=self.metadata,
         )
         self.errors = ErrorClassifier()
 

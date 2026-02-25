@@ -81,6 +81,7 @@ class ClientConfig:
         rate_limit_per_sec: 1秒あたり上限回数。
         strict_api: 仕様準拠モード。
         auto_split_codes: 自動分割有効化。
+        resolve_wildcard: ワイルドカード階層の自動解決。
         consistency_mode: 整合性モード。
         conflict_resolution: 競合解決。
         output_order: 出力順序。
@@ -98,6 +99,7 @@ class ClientConfig:
     rate_limit_per_sec: float = 1.0
     strict_api: bool = True
     auto_split_codes: bool = False
+    resolve_wildcard: bool = True
     consistency_mode: ConsistencyMode = ConsistencyMode.STRICT
     conflict_resolution: ConflictResolution = ConflictResolution.LATEST_LAST_UPDATE
     output_order: OutputOrder = OutputOrder.CANONICAL

@@ -13,10 +13,10 @@ from typing import Any
 
 class BojClient:
     """日本銀行APIの同期クライアント。"""
-    data: Incomplete
     metadata: Incomplete
+    data: Incomplete
     errors: Incomplete
-    def __init__(self, *, timeout: float = 30.0, base_url: str = 'https://www.stat-search.boj.or.jp/api/v1', lang: Lang | str = ..., format: Format | str = ..., user_agent: str = 'bojstat/0.1.0', rate_limit_per_sec: float = 1.0, cache_dir: str | Path | None = None, cache_mode: CacheMode | str = ..., cache_ttl: int = ..., strict_api: bool = True, auto_split_codes: bool = False, consistency_mode: ConsistencyMode | str = ..., conflict_resolution: ConflictResolution | str = ..., output_order: OutputOrder | str = ..., allow_raw_override: bool = False, metadata_freshness_strict: bool = False, capture_full_response: bool = False, retry_max_attempts: int = 5, retry_transport_max_attempts: int | None = None, retry_base_delay: float = 0.5, retry_cap_delay: float = 8.0, retry_jitter_ratio: float = 1.0, retry_on_403: bool = False, retry_on_403_max_attempts: int = 2, http_client: httpx.Client | None = None, http2: bool = False, proxy: str | None = None, limits: httpx.Limits | None = None) -> None:
+    def __init__(self, *, timeout: float = 30.0, base_url: str = 'https://www.stat-search.boj.or.jp/api/v1', lang: Lang | str = ..., format: Format | str = ..., user_agent: str = 'bojstat/0.1.0', rate_limit_per_sec: float = 1.0, cache_dir: str | Path | None = None, cache_mode: CacheMode | str = ..., cache_ttl: int = ..., strict_api: bool = True, auto_split_codes: bool = False, resolve_wildcard: bool = True, consistency_mode: ConsistencyMode | str = ..., conflict_resolution: ConflictResolution | str = ..., output_order: OutputOrder | str = ..., allow_raw_override: bool = False, metadata_freshness_strict: bool = False, capture_full_response: bool = False, retry_max_attempts: int = 5, retry_transport_max_attempts: int | None = None, retry_base_delay: float = 0.5, retry_cap_delay: float = 8.0, retry_jitter_ratio: float = 1.0, retry_on_403: bool = False, retry_on_403_max_attempts: int = 2, http_client: httpx.Client | None = None, http2: bool = False, proxy: str | None = None, limits: httpx.Limits | None = None) -> None:
         """クライアントを初期化する。
 
         Args:
@@ -31,6 +31,7 @@ class BojClient:
             cache_ttl: キャッシュTTL秒。
             strict_api: 仕様準拠モード。
             auto_split_codes: コード自動分割有効化。
+            resolve_wildcard: ワイルドカード階層の自動解決。
             consistency_mode: 整合性モード。
             conflict_resolution: 競合解決ルール。
             output_order: 出力順序。
@@ -58,10 +59,10 @@ class BojClient:
 
 class AsyncBojClient:
     """日本銀行APIの非同期クライアント。"""
-    data: Incomplete
     metadata: Incomplete
+    data: Incomplete
     errors: Incomplete
-    def __init__(self, *, timeout: float = 30.0, base_url: str = 'https://www.stat-search.boj.or.jp/api/v1', lang: Lang | str = ..., format: Format | str = ..., user_agent: str = 'bojstat/0.1.0', rate_limit_per_sec: float = 1.0, cache_dir: str | Path | None = None, cache_mode: CacheMode | str = ..., cache_ttl: int = ..., strict_api: bool = True, auto_split_codes: bool = False, consistency_mode: ConsistencyMode | str = ..., conflict_resolution: ConflictResolution | str = ..., output_order: OutputOrder | str = ..., allow_raw_override: bool = False, metadata_freshness_strict: bool = False, capture_full_response: bool = False, retry_max_attempts: int = 5, retry_transport_max_attempts: int | None = None, retry_base_delay: float = 0.5, retry_cap_delay: float = 8.0, retry_jitter_ratio: float = 1.0, retry_on_403: bool = False, retry_on_403_max_attempts: int = 2, http_client: httpx.AsyncClient | None = None, http2: bool = False, proxy: str | None = None, limits: httpx.Limits | None = None) -> None:
+    def __init__(self, *, timeout: float = 30.0, base_url: str = 'https://www.stat-search.boj.or.jp/api/v1', lang: Lang | str = ..., format: Format | str = ..., user_agent: str = 'bojstat/0.1.0', rate_limit_per_sec: float = 1.0, cache_dir: str | Path | None = None, cache_mode: CacheMode | str = ..., cache_ttl: int = ..., strict_api: bool = True, auto_split_codes: bool = False, resolve_wildcard: bool = True, consistency_mode: ConsistencyMode | str = ..., conflict_resolution: ConflictResolution | str = ..., output_order: OutputOrder | str = ..., allow_raw_override: bool = False, metadata_freshness_strict: bool = False, capture_full_response: bool = False, retry_max_attempts: int = 5, retry_transport_max_attempts: int | None = None, retry_base_delay: float = 0.5, retry_cap_delay: float = 8.0, retry_jitter_ratio: float = 1.0, retry_on_403: bool = False, retry_on_403_max_attempts: int = 2, http_client: httpx.AsyncClient | None = None, http2: bool = False, proxy: str | None = None, limits: httpx.Limits | None = None) -> None:
         """非同期クライアントを初期化する。"""
     async def aclose(self) -> None:
         """内部Clientをクローズする。"""

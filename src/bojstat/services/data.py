@@ -10,10 +10,12 @@ from typing import Any
 import httpx
 
 from bojstat.cache import FileCache
+import warnings
+
 from bojstat.config import NORMALIZER_VERSION, PARSER_VERSION, SCHEMA_VERSION, ClientConfig, RetryConfig
-from bojstat.enums import DB, ConsistencyMode, Format, Lang, OutputOrder
+from bojstat.enums import DB, ConsistencyMode, Frequency, Format, Lang, OutputOrder
 from bojstat.errors import BojConsistencyError, BojDateParseError
-from bojstat.models import TimeSeriesFrame
+from bojstat.models import MetadataFrame, TimeSeriesFrame
 from bojstat.normalize import expand_timeseries_rows
 from bojstat.pager.code_pager import CodePagerState, advance_code_position
 from bojstat.pager.layer_pager import LayerPagerState, advance_layer_position
@@ -22,6 +24,7 @@ from bojstat.services._transport import perform_async_request, perform_sync_requ
 from bojstat.types import ResponseMeta, TimeSeriesRecord
 from bojstat.validation import (
     canonical_params,
+    guess_frequency_from_code,
     normalize_code_periods,
     normalize_codes,
     normalize_db,
@@ -38,6 +41,70 @@ from bojstat.validation import (
 _JST = ZoneInfo("Asia/Tokyo")
 
 
+def _resolve_codes_from_metadata(
+    metadata_frame: MetadataFrame,
+    frequency: Frequency,
+) -> list[str]:
+    """メタデータから指定期種の系列コードを抽出する。
+
+    guess_frequency_from_code() でコード文字列から期種を推定するため、
+    メタデータの言語（lang）に依存しない。
+
+    Args:
+        metadata_frame: メタデータフレーム。
+        frequency: 正規化済み Frequency enum。normalize_frequency() の戻り値を期待する。
+
+    Returns:
+        系列コード一覧。該当コードがない場合は空リスト。
+    """
+    result: list[str] = []
+    for record in metadata_frame.records:
+        if not record.series_code:
+            continue
+        guessed = guess_frequency_from_code(record.series_code)
+        if guessed == frequency.value or guessed == "UNKNOWN":
+            result.append(record.series_code)
+    return result
+
+
+def _should_resolve_wildcard(
+    *,
+    config: ClientConfig,
+    resolve_wildcard: bool | None,
+    layer_norm: list[str],
+    auto_paginate: bool,
+    resume_token: str | None,
+    start_position: int | None,
+) -> bool:
+    """ワイルドカード解決パスに入るべきかを判定する。
+
+    同期・非同期で完全に同一のロジックを共有するためスタンドアロン関数とする。
+    metadata_service の有無は呼び出し元で事前にチェックする。
+
+    Args:
+        config: クライアント設定。
+        resolve_wildcard: メソッドレベルのオーバーライド値。
+        layer_norm: 正規化済みlayer値。
+        auto_paginate: 自動ページング有効か。
+        resume_token: リジュームトークン。
+        start_position: 開始位置。
+
+    Returns:
+        ワイルドカード解決パスに入るべきならTrue。
+    """
+    resolve_mode = config.resolve_wildcard if resolve_wildcard is None else resolve_wildcard
+    # NOTE: 部分ワイルドカード（"*" in layer_norm）対応時は
+    # layer_norm == ["*"] を "*" in layer_norm に変更し、
+    # _resolve_codes_from_metadata に layer フィルタロジックを追加する。
+    return (
+        resolve_mode
+        and layer_norm == ["*"]
+        and auto_paginate
+        and not resume_token
+        and not start_position
+    )
+
+
 class DataService:
     """同期データ取得サービス。"""
 
@@ -49,12 +116,14 @@ class DataService:
         retry_config: RetryConfig,
         cache: FileCache,
         limiter: Any,
+        metadata_service: Any = None,
     ) -> None:
         self._client = client
         self._config = config
         self._retry_config = retry_config
         self._cache = cache
         self._limiter = limiter
+        self._metadata_service = metadata_service
 
     def get_by_code(
         self,
@@ -277,6 +346,7 @@ class DataService:
         auto_paginate: bool = True,
         raw_params: Mapping[str, str] | None = None,
         resume_token: str | None = None,
+        resolve_wildcard: bool | None = None,
     ) -> TimeSeriesFrame:
         """階層APIで時系列データを取得する。"""
 
@@ -294,6 +364,18 @@ class DataService:
         raw = normalize_raw_params(
             dict(raw_params) if raw_params is not None else None,
             allow_raw_override=self._config.allow_raw_override,
+        )
+
+        needs_resolve = (
+            self._metadata_service is not None
+            and _should_resolve_wildcard(
+                config=self._config,
+                resolve_wildcard=resolve_wildcard,
+                layer_norm=layer_norm,
+                auto_paginate=auto_paginate,
+                resume_token=resume_token,
+                start_position=start_position,
+            )
         )
 
         endpoint = "/getDataLayer"
@@ -317,10 +399,24 @@ class DataService:
             }
         )
 
-        cache_key = self._build_cache_key("layer", fingerprint, lang_norm, format_norm)
+        resolve_mode = self._config.resolve_wildcard if resolve_wildcard is None else resolve_wildcard
+        cache_key = self._build_cache_key(
+            "layer", fingerprint, lang_norm, format_norm,
+            resolve_wildcard=resolve_mode,
+        )
         cache_hit = self._cache.get(key=cache_key, mode=self._config.cache.mode)
         if cache_hit and not cache_hit.stale:
             return TimeSeriesFrame.from_cache_payload(cache_hit.payload["payload"])  # type: ignore[arg-type]
+
+        if needs_resolve:
+            result = self._get_by_layer_via_codes(
+                db=db_norm, frequency=freq_norm,
+                start=start_norm, end=end_norm,
+                lang=lang_norm, format=format_norm,
+                raw=raw, cache_key=cache_key,
+            )
+            if result is not None:
+                return result
 
         pager = LayerPagerState(start_position=start_position or 1)
         if resume_token:
@@ -459,21 +555,120 @@ class DataService:
         self._cache.put(key=cache_key, payload=frame.to_cache_payload(), complete=True)
         return frame
 
+    def _get_by_layer_via_codes(
+        self,
+        *,
+        db: str,
+        frequency: Frequency,
+        start: str | None,
+        end: str | None,
+        lang: Lang,
+        format: Format,
+        raw: dict[str, str],
+        cache_key: str,
+    ) -> TimeSeriesFrame | None:
+        """階層ワイルドカードをメタデータ経由でコードAPIへ委譲する。
+
+        内部で get_by_code(auto_split_codes=True) に委譲するため、
+        Code API チャンク単位のキャッシュも保存される（二重キャッシュ）。
+
+        Args:
+            db: 正規化済みDB。
+            frequency: 正規化済み期種。
+            start: 開始期間。
+            end: 終了期間。
+            lang: 正規化済み言語。
+            format: 正規化済みフォーマット。
+            raw: raw_params。
+            cache_key: Layer API用キャッシュキー。
+
+        Returns:
+            TimeSeriesFrame、またはメタデータ取得失敗時は None。
+        """
+        resolve_url = f"bojstat://resolve-wildcard/{db}?layer=*&frequency={frequency.value}"
+        first_fetch = datetime.now(tz=_JST)
+
+        try:
+            meta_frame = self._metadata_service.get(db=db, lang=Lang.JP)
+        except Exception:
+            warnings.warn(
+                f"メタデータ取得に失敗したため Layer API に直接アクセスします: db={db}",
+                stacklevel=2,
+            )
+            return None
+
+        codes = _resolve_codes_from_metadata(meta_frame, frequency)
+        if not codes:
+            empty = TimeSeriesFrame(
+                records=[],
+                meta=_empty_meta(request_url=resolve_url),
+            )
+            self._cache.put(key=cache_key, payload=empty.to_cache_payload(), complete=True)
+            return empty
+
+        # get_by_code は内部でチャンク単位のキャッシュを保存するため、
+        # strict モードの window_crossed チェックを先に行い、
+        # キャッシュ汚染を防ぐ。
+        pre_code = datetime.now(tz=_JST)
+        if _window_crossed(first_fetch=first_fetch, current=pre_code):
+            if self._config.consistency_mode == ConsistencyMode.STRICT:
+                raise BojConsistencyError(
+                    signal="window_crossed",
+                    details={
+                        "first_fetch": first_fetch.isoformat(),
+                        "current": pre_code.isoformat(),
+                    },
+                )
+
+        frame = self.get_by_code(
+            db=db, code=codes,
+            start=start, end=end,
+            lang=lang, format=format,
+            strict_api=False,
+            auto_split_codes=True,
+            raw_params=raw if raw else None,
+        )
+
+        now = datetime.now(tz=_JST)
+        if _window_crossed(first_fetch=first_fetch, current=now):
+            if self._config.consistency_mode == ConsistencyMode.STRICT:
+                raise BojConsistencyError(
+                    signal="window_crossed",
+                    details={
+                        "first_fetch": first_fetch.isoformat(),
+                        "current": now.isoformat(),
+                    },
+                )
+            if frame.meta:
+                frame.meta.consistency_signal = "window_crossed"
+
+        if frame.meta:
+            frame.meta.request_url = resolve_url
+
+        self._cache.put(key=cache_key, payload=frame.to_cache_payload(), complete=True)
+        return frame
+
     def _build_cache_key(
         self,
         api: str,
         fingerprint: str,
         lang: Lang,
         format: Format,
+        *,
+        resolve_wildcard: bool | None = None,
     ) -> str:
-        return (
+        base = (
             f"api={api}|origin={self._config.base_url}|lang={lang.value}|format={format.value}|"
             f"parser={PARSER_VERSION}|normalizer={NORMALIZER_VERSION}|schema={SCHEMA_VERSION}|"
             f"strict_api={self._config.strict_api}|auto_split={self._config.auto_split_codes}|"
             f"consistency={self._config.consistency_mode.value}|"
             f"conflict={self._config.conflict_resolution.value}|"
-            f"output_order={self._config.output_order.value}|fp={fingerprint}"
+            f"output_order={self._config.output_order.value}"
         )
+        if resolve_wildcard is not None:
+            base += f"|resolve_wildcard={resolve_wildcard}"
+        base += f"|fp={fingerprint}"
+        return base
 
 
 class AsyncDataService:
@@ -487,12 +682,14 @@ class AsyncDataService:
         retry_config: RetryConfig,
         cache: FileCache,
         limiter: Any,
+        metadata_service: Any = None,
     ) -> None:
         self._client = client
         self._config = config
         self._retry_config = retry_config
         self._cache = cache
         self._limiter = limiter
+        self._metadata_service = metadata_service
 
     async def get_by_code(self, **kwargs: Any) -> TimeSeriesFrame:
         """同期実装互換の非同期版。"""
@@ -781,6 +978,7 @@ class _DataAsyncLogic:
         auto_paginate = kwargs.get("auto_paginate", True)
         raw_params = kwargs.get("raw_params")
         resume_token = kwargs.get("resume_token")
+        resolve_wildcard = kwargs.get("resolve_wildcard")
 
         lang_norm = normalize_lang(lang or self._owner._config.lang)
         format_norm = normalize_format(format or self._owner._config.format)
@@ -792,6 +990,18 @@ class _DataAsyncLogic:
         raw = normalize_raw_params(
             dict(raw_params) if raw_params is not None else None,
             allow_raw_override=self._owner._config.allow_raw_override,
+        )
+
+        needs_resolve = (
+            self._owner._metadata_service is not None
+            and _should_resolve_wildcard(
+                config=self._owner._config,
+                resolve_wildcard=resolve_wildcard,
+                layer_norm=layer_norm,
+                auto_paginate=auto_paginate,
+                resume_token=resume_token,
+                start_position=start_position,
+            )
         )
 
         endpoint = "/getDataLayer"
@@ -815,17 +1025,32 @@ class _DataAsyncLogic:
             }
         )
 
+        resolve_mode = (
+            self._owner._config.resolve_wildcard if resolve_wildcard is None else resolve_wildcard
+        )
+        _rw_part = f"|resolve_wildcard={resolve_mode}" if resolve_mode is not None else ""
         cache_key = (
             f"api=layer|origin={self._owner._config.base_url}|lang={lang_norm.value}|format={format_norm.value}|"
             f"parser={PARSER_VERSION}|normalizer={NORMALIZER_VERSION}|schema={SCHEMA_VERSION}|"
             f"strict_api={self._owner._config.strict_api}|auto_split={self._owner._config.auto_split_codes}|"
             f"consistency={self._owner._config.consistency_mode.value}|"
             f"conflict={self._owner._config.conflict_resolution.value}|"
-            f"output_order={self._owner._config.output_order.value}|fp={fingerprint}"
+            f"output_order={self._owner._config.output_order.value}"
+            f"{_rw_part}|fp={fingerprint}"
         )
         cache_hit = self._owner._cache.get(key=cache_key, mode=self._owner._config.cache.mode)
         if cache_hit and not cache_hit.stale:
             return TimeSeriesFrame.from_cache_payload(cache_hit.payload["payload"])  # type: ignore[arg-type]
+
+        if needs_resolve:
+            result = await self._get_by_layer_via_codes(
+                db=db_norm, frequency=freq_norm,
+                start=start_norm, end=end_norm,
+                lang=lang_norm, format=format_norm,
+                raw=raw, cache_key=cache_key,
+            )
+            if result is not None:
+                return result
 
         pager = LayerPagerState(start_position=start_position or 1)
         if resume_token:
@@ -956,6 +1181,79 @@ class _DataAsyncLogic:
         if meta.next_position is None:
             meta.resume_token = None
         frame = TimeSeriesFrame(records=records_sorted, meta=meta)
+        self._owner._cache.put(key=cache_key, payload=frame.to_cache_payload(), complete=True)
+        return frame
+
+    async def _get_by_layer_via_codes(
+        self,
+        *,
+        db: str,
+        frequency: Frequency,
+        start: str | None,
+        end: str | None,
+        lang: Lang,
+        format: Format,
+        raw: dict[str, str],
+        cache_key: str,
+    ) -> TimeSeriesFrame | None:
+        """非同期版の階層ワイルドカード→コードAPI委譲。詳細は同期版docstring参照。"""
+        resolve_url = f"bojstat://resolve-wildcard/{db}?layer=*&frequency={frequency.value}"
+        first_fetch = datetime.now(tz=_JST)
+
+        try:
+            meta_frame = await self._owner._metadata_service.get(db=db, lang=Lang.JP)
+        except Exception:
+            warnings.warn(
+                f"メタデータ取得に失敗したため Layer API に直接アクセスします: db={db}",
+                stacklevel=2,
+            )
+            return None
+
+        codes = _resolve_codes_from_metadata(meta_frame, frequency)
+        if not codes:
+            empty = TimeSeriesFrame(
+                records=[],
+                meta=_empty_meta(request_url=resolve_url),
+            )
+            self._owner._cache.put(key=cache_key, payload=empty.to_cache_payload(), complete=True)
+            return empty
+
+        pre_code = datetime.now(tz=_JST)
+        if _window_crossed(first_fetch=first_fetch, current=pre_code):
+            if self._owner._config.consistency_mode == ConsistencyMode.STRICT:
+                raise BojConsistencyError(
+                    signal="window_crossed",
+                    details={
+                        "first_fetch": first_fetch.isoformat(),
+                        "current": pre_code.isoformat(),
+                    },
+                )
+
+        frame = await self.get_by_code(
+            db=db, code=codes,
+            start=start, end=end,
+            lang=lang, format=format,
+            strict_api=False,
+            auto_split_codes=True,
+            raw_params=raw if raw else None,
+        )
+
+        now = datetime.now(tz=_JST)
+        if _window_crossed(first_fetch=first_fetch, current=now):
+            if self._owner._config.consistency_mode == ConsistencyMode.STRICT:
+                raise BojConsistencyError(
+                    signal="window_crossed",
+                    details={
+                        "first_fetch": first_fetch.isoformat(),
+                        "current": now.isoformat(),
+                    },
+                )
+            if frame.meta:
+                frame.meta.consistency_signal = "window_crossed"
+
+        if frame.meta:
+            frame.meta.request_url = resolve_url
+
         self._owner._cache.put(key=cache_key, payload=frame.to_cache_payload(), complete=True)
         return frame
 

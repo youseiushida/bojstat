@@ -184,19 +184,19 @@ with BojClient() as client:
         print(rec.series_code, rec.survey_date, rec.value)
 ```
 
-ワイルドカード指定:
+ワイルドカード指定（大規模DBでも自動でCode API経由に切り替え）:
 
 ```python
 frame = client.data.get_by_layer(
-    db=DB.IR01,
-    frequency="D",
+    db=DB.資金循環,
+    frequency="Q",
     layer="*",  # 全階層
-    start="202501",
-    end="202503",
+    start="202401",
+    end="202404",
 )
 ```
 
-> **注意:** `layer="*"` はサーバー側で展開されるため、系列数が 1,250 を超える大規模 DB（FF / 資金循環など）では `BojBadRequestError` になります。大規模 DB では `layer` を具体的に指定するか、`get_by_code` + `auto_split_codes=True` を使用してください。
+> `layer="*"` で系列数が1,250を超える場合、メタデータ経由で系列コードを特定し Code API に自動委譲します（デフォルト有効）。`resolve_wildcard=False` で無効化可能。部分ワイルドカード（`layer=["1", "*"]`）は現時点では自動解決の対象外です。
 
 ### メタデータ API
 
