@@ -201,7 +201,7 @@ class MetadataFrame:
             条件を満たすレコードだけを含む新しいMetadataFrame。
 
         Examples:
-            >>> frame.filter(lambda r: r.category == "外国為替")
+            >>> frame.filter(lambda r: r.category == "外国為替市況")
             >>> frame.filter(lambda r: r.layer1 == "1" and r.unit == "億円")
         """
         return MetadataFrame(

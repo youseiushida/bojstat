@@ -125,7 +125,7 @@ with BojClient() as client:
         print(rec.series_code, rec.series_name)
 
     # filter() で任意の条件を指定
-    hits = meta.filter(lambda r: r.category == "外国為替" and r.layer1 == "1")
+    hits = meta.filter(lambda r: r.category == "外国為替市況" and r.layer1 == "1")
     print(hits.series_codes)
 
     # find() と filter() のチェーン
@@ -188,11 +188,15 @@ with BojClient() as client:
 
 ```python
 frame = client.data.get_by_layer(
-    db=DB.資金循環,
-    frequency="Q",
+    db=DB.IR01,
+    frequency="D",
     layer="*",  # 全階層
+    start="202501",
+    end="202503",
 )
 ```
+
+> **注意:** `layer="*"` はサーバー側で展開されるため、系列数が 1,250 を超える大規模 DB（FF / 資金循環など）では `BojBadRequestError` になります。大規模 DB では `layer` を具体的に指定するか、`get_by_code` + `auto_split_codes=True` を使用してください。
 
 ### メタデータ API
 
@@ -286,9 +290,10 @@ pivot = frame.to_wide()
 ```python
 # 階層 API: auto_paginate=True（デフォルト）で全ページ自動取得
 frame = client.data.get_by_layer(
-    db=DB.FF,
-    frequency="Q",
-    layer="*",
+    db=DB.国際収支統計,
+    frequency="M",
+    layer=[1, 1, 1],
+    start="202401",
 )
 # frame.records に全レコードが格納される
 ```
@@ -297,9 +302,10 @@ frame = client.data.get_by_layer(
 
 ```python
 frame = client.data.get_by_layer(
-    db=DB.資金循環,
-    frequency="Q",
-    layer="*",
+    db=DB.国際収支統計,
+    frequency="M",
+    layer=[1, 1, 1],
+    start="202401",
     auto_paginate=False,  # 1 ページだけ取得
 )
 print(frame.meta.next_position)  # 次回開始位置（None なら全取得済み）
