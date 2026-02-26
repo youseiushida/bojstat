@@ -17,13 +17,32 @@ def _require_typer() -> Any:
     return typer
 
 
+def _normalize_nested_columns_for_parquet(df: Any) -> Any:
+    """Parquet非対応のネスト型セルをJSON文字列へ変換する。"""
+
+    columns = list(getattr(df, "columns", []))
+    for column in columns:
+        values = list(df[column])
+        if any(isinstance(value, (dict, list, tuple)) for value in values):
+            df[column] = [
+                json.dumps(value, ensure_ascii=False, sort_keys=True, default=str)
+                if isinstance(value, (dict, list, tuple))
+                else value
+                for value in values
+            ]
+    return df
+
+
 def _dump_frame(frame: Any, out: Path) -> None:
     suffix = out.suffix.lower()
     if suffix == ".json":
-        payload = {
-            "meta": frame.meta.__dict__,
-            "records": frame.to_long(numeric_mode="string") if hasattr(frame, "to_long") else [],
-        }
+        if hasattr(frame, "to_cache_payload"):
+            payload = frame.to_cache_payload()
+        else:
+            payload = {
+                "meta": getattr(frame, "meta", None),
+                "records": frame.to_long(numeric_mode="string") if hasattr(frame, "to_long") else [],
+            }
         out.write_text(json.dumps(payload, ensure_ascii=False, indent=2, default=str), encoding="utf-8")
         return
     if suffix == ".csv":
@@ -38,6 +57,7 @@ def _dump_frame(frame: Any, out: Path) -> None:
                 "Parquet backend is required. pip install 'bojstat[cli]' を実行してください。"
             ) from exc
         df = frame.to_pandas()
+        df = _normalize_nested_columns_for_parquet(df)
         df.to_parquet(out, index=False)
         return
     raise ValueError("出力拡張子は .json / .csv / .parquet のみ対応です。")
