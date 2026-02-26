@@ -41,14 +41,64 @@ from bojstat.validation import (
 _JST = ZoneInfo("Asia/Tokyo")
 
 
+def _frequency_code_from_metadata_label(label: str | None) -> str | None:
+    """メタデータのFREQUENCYラベルを期種コードへ変換する。"""
+    if label is None:
+        return None
+    text = str(label).strip()
+    if not text:
+        return None
+
+    upper = text.upper()
+    compact = upper.replace(" ", "")
+    if compact in {"CY", "FY", "CH", "FH", "Q", "M", "W", "D"}:
+        return compact
+
+    if "SEMIANNUAL(SEP)" in compact or ("SEMIANNUAL" in upper and "SEP" in upper):
+        return "FH"
+    if "SEMIANNUAL" in upper:
+        return "CH"
+    if "ANNUAL(MAR)" in compact or ("ANNUAL" in upper and "MAR" in upper):
+        return "FY"
+    if "ANNUAL" in upper:
+        return "CY"
+    if "QUARTERLY" in upper:
+        return "Q"
+    if "MONTHLY" in upper:
+        return "M"
+    if "WEEKLY" in upper:
+        return "W"
+    if "DAILY" in upper:
+        return "D"
+
+    if "半期" in text and "年度" in text:
+        return "FH"
+    if "半期" in text and "暦年" in text:
+        return "CH"
+    if "四半期" in text:
+        return "Q"
+    if "月次" in text:
+        return "M"
+    if "週次" in text:
+        return "W"
+    if "日次" in text:
+        return "D"
+    if "年次" in text and "年度" in text:
+        return "FY"
+    if "年次" in text and "暦年" in text:
+        return "CY"
+    return None
+
+
 def _resolve_codes_from_metadata(
     metadata_frame: MetadataFrame,
     frequency: Frequency,
 ) -> list[str]:
     """メタデータから指定期種の系列コードを抽出する。
 
-    guess_frequency_from_code() でコード文字列から期種を推定するため、
-    メタデータの言語（lang）に依存しない。
+    metadata.frequency が判定できる場合はそれを優先して絞り込む。
+    metadata.frequency が不明な行だけ、guess_frequency_from_code() の推定結果で
+    フォールバック判定する。
 
     Args:
         metadata_frame: メタデータフレーム。
@@ -61,6 +111,13 @@ def _resolve_codes_from_metadata(
     for record in metadata_frame.records:
         if not record.series_code:
             continue
+
+        metadata_freq = _frequency_code_from_metadata_label(record.frequency)
+        if metadata_freq is not None:
+            if metadata_freq == frequency.value:
+                result.append(record.series_code)
+            continue
+
         guessed = guess_frequency_from_code(record.series_code)
         if guessed == frequency.value or guessed == "UNKNOWN":
             result.append(record.series_code)

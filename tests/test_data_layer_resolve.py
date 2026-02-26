@@ -188,6 +188,20 @@ class TestResolveCodesFromMetadata:
         assert "UNKNOWN_CODE" in codes
         assert "CODE_M01" not in codes
 
+    def test_metadata_frequency_precedence_for_unknown_code(self) -> None:
+        """推定不能コードでも metadata.frequency があればその値を優先すること。"""
+        records = [
+            _make_meta_record("UNKNOWN_MONTHLY", frequency="月次"),
+            _make_meta_record("UNKNOWN_QUARTERLY", frequency="四半期"),
+            _make_meta_record("UNKNOWN_NO_LABEL", frequency=None),
+        ]
+        frame = _make_metadata_frame(records)
+        codes = _resolve_codes_from_metadata(frame, Frequency.Q)
+        assert "UNKNOWN_QUARTERLY" in codes
+        assert "UNKNOWN_MONTHLY" not in codes
+        # frequencyラベル不明時は従来どおりコード推定にフォールバック
+        assert "UNKNOWN_NO_LABEL" in codes
+
 
 # ---------------------------------------------------------------------------
 # _should_resolve_wildcard 単体テスト
@@ -363,6 +377,48 @@ def test_wildcard_resolves_via_code_api() -> None:
     assert "layer" not in call_log
     assert len(frame.records) == 2
     assert frame.meta.request_url.startswith("bojstat://resolve-wildcard/")
+
+
+def test_wildcard_resolve_filters_metadata_frequency_before_code_api() -> None:
+    """ワイルドカード解決時に metadata.frequency で不一致系列を除外すること。"""
+    captured_code_params: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = request.url.path
+        if "/getMetadata" in path:
+            return _json_response(
+                _metadata_payload([
+                    {"SERIES CODE": "UNKNOWN_MONTHLY", "NAME OF TIME SERIES": "M", "FREQUENCY": "月次"},
+                    {"SERIES CODE": "UNKNOWN_QUARTERLY", "NAME OF TIME SERIES": "Q", "FREQUENCY": "四半期"},
+                ]),
+                request,
+            )
+        if "/getDataCode" in path:
+            captured_code_params.append(request.url.params.get("CODE", ""))
+            return _json_response(
+                _ok_payload([_make_series("UNKNOWN_QUARTERLY", ["202401"], ["1.0"])]),
+                request,
+            )
+        return httpx.Response(status_code=404, request=request)
+
+    transport = httpx.MockTransport(handler)
+    http_client = httpx.Client(transport=transport, base_url="https://example.invalid/api/v1")
+
+    with BojClient(
+        http_client=http_client,
+        base_url="https://example.invalid/api/v1",
+        cache_mode="off",
+        rate_limit_per_sec=1000.0,
+    ) as client:
+        frame = client.data.get_by_layer(
+            db="FF",
+            frequency="Q",
+            layer="*",
+        )
+
+    assert len(frame.records) == 1
+    assert len(captured_code_params) == 1
+    assert captured_code_params[0] == "UNKNOWN_QUARTERLY"
 
 
 def test_wildcard_disabled_uses_layer_api() -> None:
